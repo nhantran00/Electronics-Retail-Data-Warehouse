@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spotify-postgres
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spotify_dw}
+      POSTGRES_USER: ${POSTGRES_USER:-spotify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spotify_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spotify} -d ${POSTGRES_DB:-spotify_dw}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - spotify_network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8.13
+    container_name: spotify-pgadmin
+    env_file:
+      - ./.env
+    environment:
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spotify_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  spotify_network:
+    driver: bridge
