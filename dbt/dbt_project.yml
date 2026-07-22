@@ -1,8 +1,8 @@
-name: 'spotify_music_analytics'
+name: 'electronics_retail_dw'
 version: '1.0.0'
 config-version: 2
 
-profile: 'spotify_music_analytics'
+profile: 'electronics_retail_dw'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -16,7 +16,7 @@ clean-targets:
   - "dbt_packages"
 
 models:
-  spotify_music_analytics:
+  electronics_retail_dw:
     staging:
       +materialized: view
     mart:

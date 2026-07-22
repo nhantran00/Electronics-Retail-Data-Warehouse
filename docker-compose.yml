@@ -1,35 +1,35 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: spotify-postgres
+    container_name: electronics-retail-postgres
     env_file:
       - ./.env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-spotify_dw}
-      POSTGRES_USER: ${POSTGRES_USER:-spotify}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spotify_password}
+      POSTGRES_DB: ${POSTGRES_DB:-electronics_retail_dw}
+      POSTGRES_USER: ${POSTGRES_USER:-electronics_retail}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-electronics_retail_password}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spotify} -d ${POSTGRES_DB:-spotify_dw}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-electronics_retail} -d ${POSTGRES_DB:-electronics_retail_dw}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - spotify_network
+      - electronics_retail_network
     restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:8.13
-    container_name: spotify-pgadmin
+    container_name: electronics-retail-pgadmin
     env_file:
       - ./.env
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@spotify.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@electronics-retail.local}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
     ports:
       - "${PGADMIN_PORT:-5050}:80"
@@ -39,18 +39,18 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - spotify_network
+      - electronics_retail_network
     restart: unless-stopped
 
   airflow-init:
     image: apache/airflow:2.9.3-python3.11
-    container_name: spotify-airflow-init
+    container_name: electronics-retail-airflow-init
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://spotify:spotify_password@postgres:5432/spotify_dw
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://electronics_retail:electronics_retail_password@postgres:5432/electronics_retail_dw
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -58,19 +58,19 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/opt/airflow/dbt
     networks:
-      - spotify_network
+      - electronics_retail_network
     entrypoint: /bin/bash
     command: -c "airflow db init"
 
   airflow-webserver:
     image: apache/airflow:2.9.3-python3.11
-    container_name: spotify-airflow-webserver
+    container_name: electronics-retail-airflow-webserver
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://spotify:spotify_password@postgres:5432/spotify_dw
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://electronics_retail:electronics_retail_password@postgres:5432/electronics_retail_dw
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -80,18 +80,18 @@ services:
     ports:
       - "8080:8080"
     networks:
-      - spotify_network
+      - electronics_retail_network
     command: webserver
 
   airflow-scheduler:
     image: apache/airflow:2.9.3-python3.11
-    container_name: spotify-airflow-scheduler
+    container_name: electronics-retail-airflow-scheduler
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://spotify:spotify_password@postgres:5432/spotify_dw
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://electronics_retail:electronics_retail_password@postgres:5432/electronics_retail_dw
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -99,7 +99,7 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/opt/airflow/dbt
     networks:
-      - spotify_network
+      - electronics_retail_network
     command: scheduler
 
 volumes:
@@ -107,5 +107,5 @@ volumes:
   pgadmin_data:
 
 networks:
-  spotify_network:
+  electronics_retail_network:
     driver: bridge
